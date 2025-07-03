@@ -332,21 +332,24 @@ class Loader(abc.ABC):
             paths_to_load.extend(self._glob_paths(external_models_path, extension=".yaml"))
 
         def _load(path: Path) -> t.List[Model]:
-            with open(path, "r", encoding="utf-8") as file:
-                return [
-                    create_external_model(
-                        defaults=self.config.model_defaults.dict(),
-                        path=path,
-                        project=self.config.project,
-                        audit_definitions=audits,
-                        **{
-                            "dialect": self.config.model_defaults.dialect,
-                            "default_catalog": self.context.default_catalog,
-                            **row,
-                        },
-                    )
-                    for row in YAML().load(file.read())
-                ]
+            try:
+                with open(path, "r", encoding="utf-8") as file:
+                    return [
+                        create_external_model(
+                            defaults=self.config.model_defaults.dict(),
+                            path=path,
+                            project=self.config.project,
+                            audit_definitions=audits,
+                            **{
+                                "dialect": self.config.model_defaults.dialect,
+                                "default_catalog": self.context.default_catalog,
+                                **row,
+                            },
+                        )
+                        for row in YAML().load(file.read())
+                    ]
+            except Exception as ex:
+                raise ConfigError(self._failed_to_load_model_error(path, ex))
 
         for path in paths_to_load:
             self._track_file(path)
